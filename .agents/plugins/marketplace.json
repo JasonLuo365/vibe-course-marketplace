@@ -1,12 +1,21 @@
 {
-  "name": "vibe-course-spike",
-  "interface": { "displayName": "Vibe 课程 Spike" },
+  "name": "vibe-course",
+  "interface": {
+    "displayName": "Vibe Course"
+  },
   "plugins": [
     {
-      "name": "vibe-submit-spike",
-      "source": { "source": "local", "path": "./plugins/vibe-submit-spike" },
-      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "name": "vibe-submit",
+      "source": {
+        "source": "local",
+        "path": "./plugins/vibe-submit"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
       "category": "Education"
     }
   ]
 }
+
