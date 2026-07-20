@@ -7,7 +7,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from .api import ApiError, create_student_group, get_meta, get_status, get_student_profile, join_student_group, upload
+from .api import ApiError, create_student_group, get_meta, get_report, get_reports, get_status, get_student_profile, join_student_group, upload
 from .config import Config, ConfigError, load_config
 from .outbox import get_outbox, list_outbox, remove_outbox, retry_config, save_outbox
 from .preview import PreviewError, create_preview, load_preview, preview_contents, resolve_project_root
@@ -49,6 +49,20 @@ def get_submission_status_impl(cfg: Config, assignment_code: str) -> dict[str, A
     except ApiError as exc:
         return _error_dict(exc.code, exc.message)
     return {"ok": True, "status": result}
+
+
+def get_feedback_reports_impl(cfg: Config) -> dict[str, Any]:
+    try:
+        return {"ok": True, "reports": get_reports(cfg).get("reports", [])}
+    except ApiError as exc:
+        return _error_dict(exc.code, exc.message)
+
+
+def get_feedback_report_impl(cfg: Config, assignment_code: str) -> dict[str, Any]:
+    try:
+        return {"ok": True, "report": get_report(cfg, assignment_code)}
+    except ApiError as exc:
+        return _error_dict(exc.code, exc.message)
 
 
 def get_group_status_impl(cfg: Config) -> dict[str, Any]:
@@ -278,6 +292,26 @@ def get_submission_status(assignment_code: str) -> dict[str, Any]:
     except ConfigError as exc:
         return _error_dict("CONFIG_ERROR", str(exc))
     return get_submission_status_impl(cfg, assignment_code)
+
+
+@mcp.tool()
+def get_feedback_reports() -> dict[str, Any]:
+    """查看自己全部作业的评估反馈发布状态和已发布成绩。"""
+    try:
+        cfg = _load_cfg()
+    except ConfigError as exc:
+        return _error_dict("CONFIG_ERROR", str(exc))
+    return get_feedback_reports_impl(cfg)
+
+
+@mcp.tool()
+def get_feedback_report(assignment_code: str) -> dict[str, Any]:
+    """查看一份作业的个人报告和已发布小组报告。"""
+    try:
+        cfg = _load_cfg()
+    except ConfigError as exc:
+        return _error_dict("CONFIG_ERROR", str(exc))
+    return get_feedback_report_impl(cfg, assignment_code)
 
 
 @mcp.tool()

@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import installed_version
-from .api import ApiError, get_meta, upload
+from .api import ApiError, get_meta, get_report, get_reports, upload
 from .collect import FileEntry, collect_project
 from .config import Config, ConfigError, ServerChangeRequired, _codex_home, load_config
 from .outbox import get_outbox, list_outbox, remove_outbox, retry_config, save_outbox
@@ -261,6 +261,21 @@ def _cmd_doctor(_args: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def _cmd_report(args: argparse.Namespace) -> int:
+    try:
+        cfg = load_config()
+    except ConfigError as exc:
+        print(f"Configuration error: {exc}", file=sys.stderr)
+        return 1
+    try:
+        data = get_report(cfg, args.code) if args.code else get_reports(cfg)
+    except ApiError as exc:
+        print(f"Could not fetch reports ({exc.status}/{exc.code}): {exc.message}", file=sys.stderr)
+        return 1
+    print(json.dumps(data, ensure_ascii=False, indent=2))
+    return 0
+
+
 def _check_server(server_url: str) -> tuple[bool, str]:
     """Probe the server's health endpoint."""
     url = f"{server_url.rstrip('/')}/health"
@@ -313,6 +328,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
     doctor_parser = sub.add_parser("doctor", help="Check client health")
     doctor_parser.set_defaults(func=_cmd_doctor)
+
+    report_parser = sub.add_parser("report", help="View released evaluation feedback")
+    report_parser.add_argument("--code", help="Assignment code; omit to list all report states")
+    report_parser.set_defaults(func=_cmd_report)
 
     from .bootstrap import DEFAULT_INDEX_URL, _cmd_bootstrap
 

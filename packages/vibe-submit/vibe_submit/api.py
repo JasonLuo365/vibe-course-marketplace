@@ -68,6 +68,14 @@ def get_status(cfg: Config, assignment_code: str, transport=None) -> dict:
     return _request("GET", url, cfg, transport=transport)
 
 
+def get_reports(cfg: Config, transport=None) -> dict:
+    return _request("GET", f"{cfg.server_url.rstrip('/')}/api/student/reports", cfg, transport=transport)
+
+
+def get_report(cfg: Config, assignment_code: str, transport=None) -> dict:
+    return _request("GET", f"{cfg.server_url.rstrip('/')}/api/student/reports/{assignment_code}", cfg, transport=transport)
+
+
 def register_student(server_url: str, course_code: str, student_no: str, name: str, transport=None) -> dict:
     url = f"{server_url.rstrip('/')}/api/student-registration"
     try:
