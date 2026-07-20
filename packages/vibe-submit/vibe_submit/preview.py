@@ -215,6 +215,41 @@ def load_preview(preview_id: str) -> PreviewRecord:
     )
 
 
+def preview_contents(preview_id: str, path: str | None = None) -> dict[str, Any]:
+    """Return safe preview index, code, or prompt/final-answer session pairs."""
+    preview = load_preview(preview_id)
+    with zipfile.ZipFile(preview.zip_path, "r") as zf:
+        names = zf.namelist()
+        if path is None:
+            return {"ok": True, "index": {"code_files": sorted(n[5:] for n in names if n.startswith("code/")), "screenshots": sorted(n[12:] for n in names if n.startswith("screenshots/")), "sessions": sorted(Path(n).stem for n in names if n.startswith("sessions/") and n.endswith(".jsonl"))}}
+        if path.startswith("code/") and path in names:
+            raw = zf.read(path)
+            return {"ok": True, "file": {"path": path[5:], "content": raw[:100 * 1024].decode("utf-8", errors="replace"), "truncated": len(raw) > 100 * 1024}}
+        if path.startswith("session:"):
+            target = f"sessions/{path.split(':', 1)[1]}.jsonl"
+            if target in names:
+                return {"ok": True, "session": {"session_id": Path(target).stem, "conversations": _safe_conversations(zf.read(target).decode("utf-8", errors="replace"))}}
+    raise PreviewError("NOT_FOUND", "preview item not found")
+
+
+def _safe_conversations(raw: str) -> list[dict[str, str | None]]:
+    items, current = [], None
+    for line in raw.splitlines():
+        try: payload = json.loads(line).get("payload", {})
+        except json.JSONDecodeError: continue
+        if not isinstance(payload, dict): continue
+        content = payload.get("content")
+        text = "\n".join(x.get("text", "") for x in content if isinstance(x, dict)) if isinstance(content, list) else content
+        if not isinstance(text, str): continue
+        if payload.get("role") == "user" and len(text.strip()) >= 2 and "<recommended_plugins>" not in text.lower() and text.count("\ufffd") / max(1, len(text)) < .03:
+            if current: items.append(current)
+            current = {"prompt": text[:6000], "answer": None}
+        elif payload.get("role") == "assistant" and current:
+            current["answer"] = text[:12000]
+    if current: items.append(current)
+    return items
+
+
 def _parse_iso(value: str | None) -> datetime | None:
     if value is None:
         return None
@@ -229,5 +264,4 @@ def _parse_iso(value: str | None) -> datetime | None:
 
 def _iso_utc(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
-
 

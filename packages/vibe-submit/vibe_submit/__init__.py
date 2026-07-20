@@ -2,7 +2,7 @@
 
 import importlib.metadata
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 
 def installed_version() -> str:
@@ -11,5 +11,4 @@ def installed_version() -> str:
         return importlib.metadata.version("vibe-submit")
     except importlib.metadata.PackageNotFoundError:
         return __version__
-
 
