@@ -1,6 +1,6 @@
 [project]
 name = "vibe-submit"
-version = "0.1.0"
+version = "0.1.1"
 description = "Vibe Coding homework submission client"
 requires-python = ">=3.10"
 dependencies = [
@@ -26,5 +26,4 @@ packages = ["vibe_submit"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-
 

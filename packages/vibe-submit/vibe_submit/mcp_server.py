@@ -10,7 +10,7 @@ from mcp.server.fastmcp import FastMCP
 from .api import ApiError, get_meta, get_status, upload
 from .config import Config, ConfigError, load_config
 from .outbox import get_outbox, list_outbox, remove_outbox, retry_config, save_outbox
-from .preview import PreviewError, create_preview, load_preview, resolve_project_root
+from .preview import PreviewError, create_preview, load_preview, preview_contents, resolve_project_root
 
 mcp = FastMCP("vibe-submit")
 
@@ -63,6 +63,13 @@ def preview_submission_impl(
         return _error_dict(exc.code, exc.message)
     except Exception as exc:
         return _error_dict("PREVIEW_FAILED", str(exc))
+
+
+def preview_contents_impl(preview_id: str, path: str | None = None) -> dict[str, Any]:
+    try:
+        return preview_contents(preview_id, path)
+    except PreviewError as exc:
+        return _error_dict(exc.code, exc.message)
 
 
 def submit_homework_impl(
@@ -207,6 +214,11 @@ def preview_submission(assignment_code: str, project_root: str | None = None) ->
 
 
 @mcp.tool()
+def get_preview_contents(preview_id: str, path: str | None = None) -> dict[str, Any]:
+    return preview_contents_impl(preview_id, path)
+
+
+@mcp.tool()
 def submit_homework(
     preview_id: str,
     confirmed: bool,
@@ -253,5 +265,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
 
