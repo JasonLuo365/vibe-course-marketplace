@@ -6,7 +6,11 @@ description: "Preview and submit a Vibe Coding coursework package with the insta
 # Submit Vibe Coding homework
 
 Use the Vibe submission tools to preview the current coursework package before
-sending it. State what will be submitted and ask the student for confirmation.
+sending it. First call `preview_submission`, then `get_preview_contents` with
+no path to show the code tree, session list, screenshots, and exclusions. On
+request use `code/<path>` or `session:<id>` to expand content. Sessions must
+show only prompts and final answers, never tool output or internal reasoning.
+Ask the student for confirmation only after the preview.
 
 After explicit confirmation, submit the package with the assignment code supplied
 by the student. Never ask the student to paste a server token into the chat, and
@@ -14,4 +18,3 @@ never expose tokens in responses.
 
 If the upload cannot reach the server, explain that the submission has been
 queued locally and guide the student to retry when their network is available.
-
