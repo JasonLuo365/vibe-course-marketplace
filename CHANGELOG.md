@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.3
+
+- Adds self-registration during bootstrap with a course invitation code,
+  student number, and name.
+- Adds fixed-group tools: create a group, join with a six-character code, and
+  inspect current group status.
+
 ## v0.1.2
 
 - Adds a clean, immutable release for the safe preview workflow.

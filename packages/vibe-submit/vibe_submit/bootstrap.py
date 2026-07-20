@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
+from .api import ApiError, register_student
 from .config import ConfigError, _codex_home, _global_config_path, _toml_str, validate_server_url
 
 DEFAULT_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
@@ -222,7 +223,30 @@ def _chmod_private(path: Path) -> None:
         pass
 
 
-def _configure(student_no: str | None, token: str | None, server_url: str | None) -> bool:
+def _configure(student_no: str | None, token: str | None, server_url: str | None, student_name: str | None = None, course_code: str | None = None) -> bool:
+    if token is None:
+        if server_url is None:
+            server_url = input("server URL: ").strip()
+        try:
+            server_url = validate_server_url(server_url)
+        except ConfigError as exc:
+            print(f"config error: {exc}")
+            return False
+        if student_no is None:
+            student_no = input("student number: ").strip()
+        if student_name is None:
+            student_name = input("student name: ").strip()
+        if course_code is None:
+            course_code = input("course invitation code: ").strip()
+        try:
+            token = register_student(server_url, course_code, student_no, student_name).get("submit_token", "")
+        except ApiError as exc:
+            print(f"registration failed: {exc.message}")
+            return False
+        if not token:
+            print("registration failed: server did not return a submit token")
+            return False
+        print("student registration complete")
     if student_no is None:
         student_no = input("瀛﹀彿: ").strip()
     if token is None:
@@ -264,7 +288,7 @@ def _cmd_bootstrap(args: argparse.Namespace) -> int:
     if not _register_marketplace(args.marketplace_url, args.marketplace_name):
         ok = False
 
-    if not _configure(args.student_no, args.token, args.server):
+    if not _configure(args.student_no, args.token, args.server, args.student_name, args.course_code):
         ok = False
 
     doctor_code = _run_doctor()

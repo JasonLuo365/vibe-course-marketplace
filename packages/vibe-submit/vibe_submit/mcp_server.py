@@ -7,7 +7,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from .api import ApiError, get_meta, get_status, upload
+from .api import ApiError, create_student_group, get_meta, get_status, get_student_profile, join_student_group, upload
 from .config import Config, ConfigError, load_config
 from .outbox import get_outbox, list_outbox, remove_outbox, retry_config, save_outbox
 from .preview import PreviewError, create_preview, load_preview, preview_contents, resolve_project_root
@@ -49,6 +49,27 @@ def get_submission_status_impl(cfg: Config, assignment_code: str) -> dict[str, A
     except ApiError as exc:
         return _error_dict(exc.code, exc.message)
     return {"ok": True, "status": result}
+
+
+def get_group_status_impl(cfg: Config) -> dict[str, Any]:
+    try:
+        return {"ok": True, "profile": get_student_profile(cfg)}
+    except ApiError as exc:
+        return _error_dict(exc.code, exc.message)
+
+
+def create_group_impl(cfg: Config, group_name: str) -> dict[str, Any]:
+    try:
+        return {"ok": True, "group": create_student_group(cfg, group_name)}
+    except ApiError as exc:
+        return _error_dict(exc.code, exc.message)
+
+
+def join_group_impl(cfg: Config, join_code: str) -> dict[str, Any]:
+    try:
+        return {"ok": True, "profile": join_student_group(cfg, join_code)}
+    except ApiError as exc:
+        return _error_dict(exc.code, exc.message)
 
 
 def preview_submission_impl(
@@ -257,6 +278,33 @@ def get_submission_status(assignment_code: str) -> dict[str, Any]:
     except ConfigError as exc:
         return _error_dict("CONFIG_ERROR", str(exc))
     return get_submission_status_impl(cfg, assignment_code)
+
+
+@mcp.tool()
+def get_group_status() -> dict[str, Any]:
+    try:
+        cfg = _load_cfg()
+    except ConfigError as exc:
+        return _error_dict("CONFIG_ERROR", str(exc))
+    return get_group_status_impl(cfg)
+
+
+@mcp.tool()
+def create_group(group_name: str) -> dict[str, Any]:
+    try:
+        cfg = _load_cfg()
+    except ConfigError as exc:
+        return _error_dict("CONFIG_ERROR", str(exc))
+    return create_group_impl(cfg, group_name)
+
+
+@mcp.tool()
+def join_group(join_code: str) -> dict[str, Any]:
+    try:
+        cfg = _load_cfg()
+    except ConfigError as exc:
+        return _error_dict("CONFIG_ERROR", str(exc))
+    return join_group_impl(cfg, join_code)
 
 
 def main() -> None:

@@ -18,3 +18,10 @@ never expose tokens in responses.
 
 If the upload cannot reach the server, explain that the submission has been
 queued locally and guide the student to retry when their network is available.
+
+## Fixed groups
+
+When a student asks about groups, call `get_group_status` first. A student
+without a group can call `create_group` with a display name and share the
+returned join code with teammates. Other students use `join_group`. If groups
+are locked, direct the student to their teacher.

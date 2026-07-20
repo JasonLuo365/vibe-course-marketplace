@@ -68,6 +68,28 @@ def get_status(cfg: Config, assignment_code: str, transport=None) -> dict:
     return _request("GET", url, cfg, transport=transport)
 
 
+def register_student(server_url: str, course_code: str, student_no: str, name: str, transport=None) -> dict:
+    url = f"{server_url.rstrip('/')}/api/student-registration"
+    try:
+        with httpx.Client(timeout=DEFAULT_TIMEOUT, transport=transport) as client:
+            response = client.post(url, headers={"Accept": "application/json"}, json={"course_code": course_code, "student_no": student_no, "name": name})
+    except httpx.RequestError as exc:
+        raise ApiError(0, "NETWORK", str(exc), None) from exc
+    return _handle_response(response)
+
+
+def get_student_profile(cfg: Config, transport=None) -> dict:
+    return _request("GET", f"{cfg.server_url.rstrip('/')}/api/student-profile", cfg, transport=transport)
+
+
+def create_student_group(cfg: Config, name: str, transport=None) -> dict:
+    return _request("POST", f"{cfg.server_url.rstrip('/')}/api/student-groups", cfg, transport=transport, json={"name": name})
+
+
+def join_student_group(cfg: Config, join_code: str, transport=None) -> dict:
+    return _request("POST", f"{cfg.server_url.rstrip('/')}/api/student-groups/join", cfg, transport=transport, json={"join_code": join_code})
+
+
 def _request(
     method: str,
     url: str,
