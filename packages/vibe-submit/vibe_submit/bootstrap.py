@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import getpass
 import os
 import shutil
 import subprocess
@@ -223,34 +224,46 @@ def _chmod_private(path: Path) -> None:
         pass
 
 
-def _configure(student_no: str | None, token: str | None, server_url: str | None, student_name: str | None = None, course_code: str | None = None) -> bool:
-    if token is None:
-        if server_url is None:
-            server_url = input("server URL: ").strip()
-        try:
-            server_url = validate_server_url(server_url)
-        except ConfigError as exc:
-            print(f"config error: {exc}")
-            return False
-        if student_no is None:
-            student_no = input("student number: ").strip()
-        if student_name is None:
-            student_name = input("student name: ").strip()
-        if course_code is None:
-            course_code = input("course invitation code: ").strip()
-        try:
-            token = register_student(server_url, course_code, student_no, student_name).get("submit_token", "")
-        except ApiError as exc:
-            print(f"registration failed: {exc.message}")
-            return False
-        if not token:
-            print("registration failed: server did not return a submit token")
-            return False
-        print("student registration complete")
+def _configure(
+    student_no: str | None,
+    password: str | None,
+    server_url: str | None,
+    student_name: str | None = None,
+    course_code: str | None = None,
+    password_confirm: str | None = None,
+) -> bool:
+    if server_url is None:
+        server_url = input("server URL: ").strip()
+    try:
+        server_url = validate_server_url(server_url)
+    except ConfigError as exc:
+        print(f"config error: {exc}")
+        return False
+    if student_no is None:
+        student_no = input("student number: ").strip()
+    if student_name is None:
+        student_name = input("student name: ").strip()
+    if course_code is None:
+        course_code = input("course invitation code: ").strip()
+    if password is None:
+        password = getpass.getpass("password: ")
+    if password_confirm is None:
+        password_confirm = getpass.getpass("confirm password: ")
+    if password != password_confirm:
+        print("config error: passwords do not match")
+        return False
+    try:
+        register_student(
+            server_url, course_code, student_no, student_name, password, password_confirm
+        )
+    except ApiError as exc:
+        print(f"registration failed: {exc.message}")
+        return False
+    print("student registration complete")
     if student_no is None:
         student_no = input("瀛﹀彿: ").strip()
-    if token is None:
-        token = input("submit_token: ").strip()
+    if password is None:
+        password = getpass.getpass("password: ")
     if server_url is None:
         server_url = input("server URL: ").strip()
 
@@ -266,9 +279,11 @@ def _configure(student_no: str | None, token: str | None, server_url: str | None
         {
             "server_url": server_url,
             "student_no": student_no,
-            "submit_token": token,
+            "password": password,
         },
     )
+    print(f"config: written to {path}")
+    return True
     print(f"鉁?config: written to {path}")
     return True
 
@@ -288,7 +303,14 @@ def _cmd_bootstrap(args: argparse.Namespace) -> int:
     if not _register_marketplace(args.marketplace_url, args.marketplace_name):
         ok = False
 
-    if not _configure(args.student_no, args.token, args.server, args.student_name, args.course_code):
+    if not _configure(
+        args.student_no,
+        args.password,
+        args.server,
+        args.name,
+        args.course_code,
+        args.password_confirm,
+    ):
         ok = False
 
     doctor_code = _run_doctor()
