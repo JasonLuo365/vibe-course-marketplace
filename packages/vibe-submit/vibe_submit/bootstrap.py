@@ -95,7 +95,8 @@ def _marketplace_section(name: str, url: str) -> list[str]:
 def _register_marketplace(url: str, name: str | None) -> bool:
     mp_name = _marketplace_name(url, name)
 
-    if shutil.which("codex"):
+    codex_path = shutil.which("codex")
+    if codex_path and Path(codex_path).is_file():
         try:
             result = subprocess.run(
                 ["codex", "plugin", "marketplace", "add", url],
