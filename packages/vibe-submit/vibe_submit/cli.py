@@ -366,13 +366,12 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Student number (non-interactive mode)",
     )
-    bootstrap_parser.add_argument(
-        "--token",
-        default=None,
-        help="Submit token (non-interactive mode)",
-    )
-    bootstrap_parser.add_argument("--student-name", default=None, help="Student name for self-registration")
+    bootstrap_parser.add_argument("--name", default=None, help="Student name (non-interactive mode)")
     bootstrap_parser.add_argument("--course-code", default=None, help="Course invitation code for self-registration")
+    bootstrap_parser.add_argument("--password", default=None, help="Student password (non-interactive mode)")
+    bootstrap_parser.add_argument(
+        "--password-confirm", default=None, help="Repeated student password (non-interactive mode)"
+    )
     bootstrap_parser.add_argument(
         "--server",
         default=None,

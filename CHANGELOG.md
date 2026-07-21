@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.6
+
+- Replaces student submit tokens with password-based registration and HTTP Basic authentication.
+- Requests the password twice during bootstrap and stores it in the local client configuration.
+- Keeps Marketplace registration working when Codex CLI is unavailable by using the existing desktop configuration fallback.
+
 ## v0.1.5
 
 - Adds a dedicated `report/` directory to student submission packages.

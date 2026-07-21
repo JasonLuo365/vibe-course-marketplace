@@ -1,6 +1,6 @@
 [project]
 name = "vibe-submit"
-version = "0.1.5"
+version = "0.1.6"
 description = "Vibe Coding homework submission client"
 requires-python = ">=3.10"
 dependencies = [

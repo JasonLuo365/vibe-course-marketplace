@@ -35,7 +35,6 @@ def upload(
     assignment_code = manifest["assignment_code"]
     url = f"{cfg.server_url.rstrip('/')}/api/submissions"
 
-    headers = {"Authorization": f"Bearer {cfg.submit_token}"}
     data = {
         "manifest": json.dumps(manifest, ensure_ascii=False),
         "force": "true" if force else "false",
@@ -55,7 +54,6 @@ def upload(
         transport=transport,
         data=data,
         files=files,
-        extra_headers=headers,
     )
 
 
@@ -76,11 +74,29 @@ def get_report(cfg: Config, assignment_code: str, transport=None) -> dict:
     return _request("GET", f"{cfg.server_url.rstrip('/')}/api/student/reports/{assignment_code}", cfg, transport=transport)
 
 
-def register_student(server_url: str, course_code: str, student_no: str, name: str, transport=None) -> dict:
+def register_student(
+    server_url: str,
+    course_code: str,
+    student_no: str,
+    name: str,
+    password: str,
+    password_confirm: str,
+    transport=None,
+) -> dict:
     url = f"{server_url.rstrip('/')}/api/student-registration"
     try:
         with httpx.Client(timeout=DEFAULT_TIMEOUT, transport=transport) as client:
-            response = client.post(url, headers={"Accept": "application/json"}, json={"course_code": course_code, "student_no": student_no, "name": name})
+            response = client.post(
+                url,
+                headers={"Accept": "application/json"},
+                json={
+                    "course_code": course_code,
+                    "student_no": student_no,
+                    "name": name,
+                    "password": password,
+                    "password_confirm": password_confirm,
+                },
+            )
     except httpx.RequestError as exc:
         raise ApiError(0, "NETWORK", str(exc), None) from exc
     return _handle_response(response)
@@ -105,16 +121,15 @@ def _request(
     transport=None,
     **kwargs,
 ) -> dict:
-    extra_headers = kwargs.pop("extra_headers", {})
     headers = {
         "Accept": "application/json",
-        "Authorization": f"Bearer {cfg.submit_token}",
-        **extra_headers,
     }
 
     try:
         with httpx.Client(timeout=DEFAULT_TIMEOUT, transport=transport) as client:
-            response = client.request(method, url, headers=headers, **kwargs)
+            response = client.request(
+                method, url, headers=headers, auth=(cfg.student_no, cfg.password), **kwargs
+            )
     except httpx.RequestError as exc:
         raise ApiError(0, "NETWORK", str(exc), None) from exc
 
