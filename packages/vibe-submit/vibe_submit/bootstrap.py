@@ -282,6 +282,8 @@ def _configure(
             "password": password,
         },
     )
+    print(f"config: written to {path}")
+    return True
     print(f"鉁?config: written to {path}")
     return True
 
