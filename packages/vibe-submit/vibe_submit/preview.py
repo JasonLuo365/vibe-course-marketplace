@@ -50,6 +50,7 @@ class PreviewRecord:
     sessions: list[dict]
     files: int
     screenshots: int
+    reports: int
     bytes: int
     skipped: list[str]
 
@@ -77,15 +78,22 @@ def _is_screenshot(entry) -> bool:
     )
 
 
-def _partition_files(files: list) -> tuple[list, list]:
+def _is_report(entry) -> bool:
+    return getattr(entry, "relpath", "").replace("\\", "/").startswith("report/")
+
+
+def _partition_files(files: list) -> tuple[list, list, list]:
     code_files = []
     screenshots = []
+    reports = []
     for entry in files:
         if _is_screenshot(entry):
             screenshots.append(entry)
+        elif _is_report(entry):
+            reports.append(entry)
         else:
             code_files.append(entry)
-    return code_files, screenshots
+    return code_files, screenshots, reports
 
 
 def _compute_fingerprint(project_root: str, stats: dict[str, Any]) -> str:
@@ -118,7 +126,7 @@ def create_preview(
 
     sessions = find_sessions(_codex_home(), root, since)
     files, skipped = collect_project(root)
-    code_files, screenshots = _partition_files(files)
+    code_files, screenshots, reports = _partition_files(files)
 
     package_meta = {
         "assignment_code": assignment_code,
@@ -137,6 +145,7 @@ def create_preview(
         screenshots,
         package_meta,
         preview_dir,
+        reports=reports,
     )
 
     fingerprint = _compute_fingerprint(root_str, stats)
@@ -163,6 +172,7 @@ def create_preview(
             "sessions": [session_index(s.path) for s in sessions],
             "files": len(code_files),
             "screenshots": len(screenshots),
+            "reports": len(reports),
             "bytes": stats["bytes"],
             "skipped": skipped,
             "fingerprint": fingerprint,
@@ -210,21 +220,23 @@ def load_preview(preview_id: str) -> PreviewRecord:
         sessions=[],
         files=0,
         screenshots=0,
+        reports=0,
         bytes=0,
         skipped=[],
     )
 
 
 def preview_contents(preview_id: str, path: str | None = None) -> dict[str, Any]:
-    """Return safe preview index, code, or prompt/final-answer session pairs."""
+    """Return safe preview index, code/report, or session prompt/final-answer pairs."""
     preview = load_preview(preview_id)
     with zipfile.ZipFile(preview.zip_path, "r") as zf:
         names = zf.namelist()
         if path is None:
-            return {"ok": True, "index": {"code_files": sorted(n[5:] for n in names if n.startswith("code/")), "screenshots": sorted(n[12:] for n in names if n.startswith("screenshots/")), "sessions": sorted(Path(n).stem for n in names if n.startswith("sessions/") and n.endswith(".jsonl"))}}
-        if path.startswith("code/") and path in names:
+            return {"ok": True, "index": {"code_files": sorted(n[5:] for n in names if n.startswith("code/")), "screenshots": sorted(n[12:] for n in names if n.startswith("screenshots/")), "report_files": sorted(n[7:] for n in names if n.startswith("report/")), "sessions": sorted(Path(n).stem for n in names if n.startswith("sessions/") and n.endswith(".jsonl"))}}
+        if (path.startswith("code/") or path.startswith("report/")) and path in names:
             raw = zf.read(path)
-            return {"ok": True, "file": {"path": path[5:], "content": raw[:100 * 1024].decode("utf-8", errors="replace"), "truncated": len(raw) > 100 * 1024}}
+            prefix_len = 5 if path.startswith("code/") else 7
+            return {"ok": True, "file": {"path": path[prefix_len:], "content": raw[:100 * 1024].decode("utf-8", errors="replace"), "truncated": len(raw) > 100 * 1024}}
         if path.startswith("session:"):
             target = f"sessions/{path.split(':', 1)[1]}.jsonl"
             if target in names:

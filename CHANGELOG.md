@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.1.5
+
+- Adds a dedicated `report/` directory to student submission packages.
+- Shows final-report files separately in the pre-submission preview.
+
 ## v0.1.3
 
 - Adds self-registration during bootstrap with a course invitation code,

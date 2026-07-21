@@ -54,25 +54,33 @@ def _is_screenshot(entry: FileEntry) -> bool:
     ) and Path(entry.relpath).suffix.lower() in _IMAGE_EXTENSIONS
 
 
-def _partition_files(files: list[FileEntry]) -> tuple[list[FileEntry], list[FileEntry]]:
+def _is_report(entry: FileEntry) -> bool:
+    return entry.relpath.replace("\\", "/").startswith("report/")
+
+
+def _partition_files(files: list[FileEntry]) -> tuple[list[FileEntry], list[FileEntry], list[FileEntry]]:
     code_files: list[FileEntry] = []
     screenshots: list[FileEntry] = []
+    reports: list[FileEntry] = []
     for entry in files:
         if _is_screenshot(entry):
             screenshots.append(entry)
+        elif _is_report(entry):
+            reports.append(entry)
         else:
             code_files.append(entry)
-    return code_files, screenshots
+    return code_files, screenshots, reports
 
 
 def _print_preview(
     sessions,
     code_files: list[FileEntry],
     screenshots: list[FileEntry],
+    reports: list[FileEntry],
     skipped: list[str],
     package_size: int,
 ) -> None:
-    total_bytes = sum(e.size for e in code_files + screenshots)
+    total_bytes = sum(e.size for e in code_files + screenshots + reports)
     print("Preview:")
     print(f"  Sessions: {len(sessions)}")
     for session in sessions:
@@ -85,6 +93,7 @@ def _print_preview(
         )
     print(f"  Code files: {len(code_files)}")
     print(f"  Screenshots: {len(screenshots)}")
+    print(f"  Report files: {len(reports)}")
     print(f"  Total content bytes: {total_bytes}")
     print(f"  Package size: {package_size} bytes")
     print(f"  Skipped denylist entries: {len(skipped)}")
@@ -126,7 +135,7 @@ def _cmd_submit(args: argparse.Namespace) -> int:
 
     sessions = find_sessions(_codex_home(), project_root, since)
     files, skipped = collect_project(project_root)
-    code_files, screenshots = _partition_files(files)
+    code_files, screenshots, reports = _partition_files(files)
 
     package_meta = {
         "assignment_code": args.code,
@@ -142,9 +151,10 @@ def _cmd_submit(args: argparse.Namespace) -> int:
             screenshots,
             package_meta,
             Path(tmpdir),
+            reports=reports,
         )
         package_size = zip_path.stat().st_size
-        _print_preview(sessions, code_files, screenshots, skipped, package_size)
+        _print_preview(sessions, code_files, screenshots, reports, skipped, package_size)
 
         if not args.yes:
             answer = input("Submit? [y/N]: ")

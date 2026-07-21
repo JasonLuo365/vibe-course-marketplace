@@ -17,6 +17,13 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _section_relpath(relpath: str, section: str) -> str:
+    """Remove the project-level section folder from an archived entry."""
+    normalized = relpath.replace("\\", "/")
+    prefix = f"{section}/"
+    return normalized[len(prefix):] if normalized.startswith(prefix) else normalized
+
+
 def build_package(
     root: Path,
     sessions: list[SessionInfo],
@@ -24,11 +31,13 @@ def build_package(
     screenshots: list[FileEntry],
     meta: dict[str, Any],
     dest: Path,
+    reports: list[FileEntry] | None = None,
 ) -> tuple[Path, dict, dict]:
     """Build a submission zip and return ``(zip_path, manifest, stats)``.
 
     The zip contains ``manifest.json``, ``sessions_index.json``,
-    ``sessions/{id}.jsonl``, ``code/{relpath}`` and ``screenshots/{relpath}``.
+    ``sessions/{id}.jsonl``, ``code/{relpath}``, ``screenshots/{relpath}``
+    and ``report/{relpath}``.
     The manifest lists every archived file with its SHA-256 digest.
     """
     root = Path(root).resolve()
@@ -48,6 +57,7 @@ def build_package(
     session_index_data: dict[str, dict] = {}
     stats_files = 0
     stats_bytes = 0
+    reports = reports or []
 
     with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         # Sessions
@@ -70,7 +80,16 @@ def build_package(
         # Screenshots
         for entry in screenshots:
             data = entry.abspath.read_bytes()
-            arcname = f"screenshots/{entry.relpath}"
+            arcname = f"screenshots/{_section_relpath(entry.relpath, 'screenshots')}"
+            zf.writestr(arcname, data)
+            manifest_files.append({"path": arcname, "sha256": _sha256(data)})
+            stats_files += 1
+            stats_bytes += entry.size
+
+        # Final report files are a separate teacher-facing deliverable.
+        for entry in reports:
+            data = entry.abspath.read_bytes()
+            arcname = f"report/{_section_relpath(entry.relpath, 'report')}"
             zf.writestr(arcname, data)
             manifest_files.append({"path": arcname, "sha256": _sha256(data)})
             stats_files += 1
@@ -95,6 +114,7 @@ def build_package(
             "stats": {
                 "sessions": len(sessions),
                 "files": stats_files,
+                "reports": len(reports),
                 "bytes": stats_bytes,
             },
         }

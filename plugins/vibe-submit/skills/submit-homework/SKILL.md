@@ -7,8 +7,9 @@ description: "Preview and submit a Vibe Coding coursework package with the insta
 
 Use the Vibe submission tools to preview the current coursework package before
 sending it. First call `preview_submission`, then `get_preview_contents` with
-no path to show the code tree, session list, screenshots, and exclusions. On
-request use `code/<path>` or `session:<id>` to expand content. Sessions must
+no path to show the code tree, final-report files, session list, screenshots,
+and exclusions. On request use `code/<path>`, `report/<path>` or `session:<id>`
+to expand content. Sessions must
 show only prompts and final answers, never tool output or internal reasoning.
 Ask the student for confirmation only after the preview.
 
