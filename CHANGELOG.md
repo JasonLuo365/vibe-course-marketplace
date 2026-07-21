@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.7
+
+- Falls back to the desktop Marketplace configuration when a stale or broken Windows `codex` command is found on `PATH`.
+
 ## v0.1.6
 
 - Replaces student submit tokens with password-based registration and HTTP Basic authentication.

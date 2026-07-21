@@ -8,6 +8,7 @@ does not depend on PyPI being available.
 
 | Plugin version | Client version | Git tag |
 | --- | --- | --- |
+| 0.1.7 | 0.1.7 | `v0.1.7` |
 | 0.1.6 | 0.1.6 | `v0.1.6` |
 | 0.1.5 | 0.1.5 | `v0.1.5` |
 
@@ -19,7 +20,7 @@ and a new immutable tag for every classroom release.
 From a machine that has not previously installed the client:
 
 ```powershell
-uvx --from "git+https://github.com/JasonLuo365/vibe-course-marketplace.git@v0.1.6#subdirectory=packages/vibe-submit" vibe-submit --help
+uvx --from "git+https://github.com/JasonLuo365/vibe-course-marketplace.git@v0.1.7#subdirectory=packages/vibe-submit" vibe-submit --help
 ```
 
 PyPI may later be used as an additional package-distribution channel, but the
