@@ -402,6 +402,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     submit_preview_parser = sub.add_parser("submit-preview", help="Submit a stored preview")
     submit_preview_parser.add_argument("--preview-id", required=True, help="Persistent preview ID")
+    submit_preview_parser.add_argument("--yes", action="store_true", help="Confirm preview submission")
     submit_preview_parser.add_argument("--force", action="store_true", help="Force overwrite on conflict")
     submit_preview_parser.set_defaults(func=_cmd_submit_preview)
 
@@ -416,7 +417,18 @@ def _build_parser() -> argparse.ArgumentParser:
     report_parser.add_argument("--code", help="Assignment code; omit to list all report states")
     report_parser.set_defaults(func=_cmd_report)
 
-    from .bootstrap import DEFAULT_INDEX_URL, _cmd_bootstrap
+    from .bootstrap import DEFAULT_INDEX_URL, _cmd_bootstrap, _cmd_setup
+
+    setup_parser = sub.add_parser(
+        "setup", help="Register and configure this machine for submissions"
+    )
+    setup_parser.add_argument("--student-no", default=None, help="Student number")
+    setup_parser.add_argument("--name", default=None, help="Student name")
+    setup_parser.add_argument("--course-code", default=None, help="Course invitation code")
+    setup_parser.add_argument("--password", default=None, help="Student password")
+    setup_parser.add_argument("--password-confirm", default=None, help="Repeated student password")
+    setup_parser.add_argument("--server", default=None, help="Submission server URL")
+    setup_parser.set_defaults(func=_cmd_setup)
 
     bootstrap_parser = sub.add_parser("bootstrap", help="Set up this machine for submissions")
     bootstrap_parser.add_argument(

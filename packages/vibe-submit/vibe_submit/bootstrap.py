@@ -295,6 +295,19 @@ def _run_doctor() -> int:
     return cli._cmd_doctor(argparse.Namespace())
 
 
+def _cmd_setup(args: argparse.Namespace) -> int:
+    """Register a student and write client configuration without Codex setup."""
+    ok = _configure(
+        args.student_no,
+        args.password,
+        args.server,
+        args.name,
+        args.course_code,
+        args.password_confirm,
+    )
+    return 0 if ok and _run_doctor() == 0 else 1
+
+
 def _cmd_bootstrap(args: argparse.Namespace) -> int:
     ok = True
 
@@ -304,15 +317,9 @@ def _cmd_bootstrap(args: argparse.Namespace) -> int:
     if not _register_marketplace(args.marketplace_url, args.marketplace_name):
         ok = False
 
-    if not _configure(
-        args.student_no,
-        args.password,
-        args.server,
-        args.name,
-        args.course_code,
-        args.password_confirm,
-    ):
+    if _cmd_setup(args) != 0:
         ok = False
+    return 0 if ok else 1
 
     doctor_code = _run_doctor()
     if doctor_code == 0:
