@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -96,6 +97,25 @@ def find_sessions(
             sessions.append(info)
     sessions.sort(key=lambda s: s.started_at)
     return sessions
+
+
+def find_sessions_for_source(
+    source: str, project_root: Path, since: datetime | None = None
+) -> list[SessionInfo]:
+    """Discover sessions for the configured coding-agent source."""
+    if source == "codex":
+        codex_home = Path(os.environ.get("VIBE_CODEX_HOME", Path.home() / ".codex"))
+        return find_sessions(codex_home, project_root, since)
+    if source == "claude":
+        from .claude_sessions import find_claude_session
+
+        session = find_claude_session(project_root)
+        if since is not None:
+            since_aware = since if since.tzinfo else since.replace(tzinfo=timezone.utc)
+            if session.started_at < since_aware:
+                return []
+        return [session]
+    raise ValueError(f"Unsupported session source: {source}")
 
 
 # Message line types known to carry a user/assistant role.
