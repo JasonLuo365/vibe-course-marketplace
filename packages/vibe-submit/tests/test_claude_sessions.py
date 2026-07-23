@@ -42,6 +42,20 @@ def test_requires_claude_code_session_id(monkeypatch: pytest.MonkeyPatch, tmp_pa
         find_claude_session(tmp_path)
 
 
+def test_does_not_treat_session_id_as_a_glob_pattern(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    config_dir = tmp_path / "claude"
+    _write_transcript(config_dir / "projects" / "workspace" / "active.jsonl", "active", project_root)
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "*")
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(config_dir))
+
+    with pytest.raises(ClaudeSessionError, match="not found"):
+        find_claude_session(project_root)
+
+
 def test_rejects_session_from_another_project(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     project_root = tmp_path / "project"
     other_project = tmp_path / "other"

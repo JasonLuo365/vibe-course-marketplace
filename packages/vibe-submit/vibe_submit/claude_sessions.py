@@ -27,7 +27,12 @@ def _active_session_id() -> str:
 
 def _find_transcript(config_dir: Path, session_id: str) -> Path:
     projects_dir = config_dir / "projects"
-    matches = list(projects_dir.glob(f"**/{session_id}.jsonl")) if projects_dir.exists() else []
+    expected_name = f"{session_id}.jsonl"
+    matches = (
+        [path for path in projects_dir.rglob("*.jsonl") if path.name == expected_name]
+        if projects_dir.exists()
+        else []
+    )
     if not matches:
         raise ClaudeSessionError(f"Claude transcript not found for active session {session_id}")
     if len(matches) != 1:
