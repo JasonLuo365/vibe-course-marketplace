@@ -8,10 +8,21 @@ argument-hint: <assignment-code>
 Use this skill only from a local Claude Code terminal session. Do not use it in
 Claude Code web or cloud environments.
 
-First verify that `vibe-submit` is installed and configured. If either is
-missing, direct the student to the repository README, where they can install
-the CLI and run `vibe-submit setup`. Never ask for, receive, or store a
-password in chat.
+First verify that `vibe-submit` is installed and configured. If the command is
+missing, tell the student to install the course submission client from the
+official course distribution, then start a new Claude Code terminal session.
+
+If the client is installed but not yet configured, tell the student to run this
+one-time command in their local terminal:
+
+```sh
+vibe-submit setup
+```
+
+The terminal registration flow collects the course invitation code, student
+number, name, and password locally. Do not ask for, receive, or store any
+registration details or password in chat. Once it succeeds, ask the student to
+run `/submit-homework <assignment-code>` again.
 
 Run:
 

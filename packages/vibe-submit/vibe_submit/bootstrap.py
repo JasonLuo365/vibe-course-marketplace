@@ -16,6 +16,7 @@ from .api import ApiError, register_student
 from .config import ConfigError, _codex_home, _global_config_path, _toml_str, validate_server_url
 
 DEFAULT_INDEX_URL = "https://pypi.tuna.tsinghua.edu.cn/simple"
+DEFAULT_SERVER_URL_ENV = "VIBE_SUBMIT_SERVER_URL"
 
 
 def _now_iso() -> str:
@@ -233,6 +234,10 @@ def _configure(
     course_code: str | None = None,
     password_confirm: str | None = None,
 ) -> bool:
+    # The installer or school-managed environment can preconfigure the service
+    # endpoint.  Students should never have to know or type this value.
+    if server_url is None:
+        server_url = os.environ.get(DEFAULT_SERVER_URL_ENV, "").strip() or None
     if server_url is None:
         server_url = input("server URL: ").strip()
     try:
