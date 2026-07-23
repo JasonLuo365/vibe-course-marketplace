@@ -35,6 +35,55 @@ def test_finds_exact_active_claude_session(monkeypatch: pytest.MonkeyPatch, tmp_
     assert find_sessions_for_source("claude", project_root) == [session]
 
 
+def test_ignores_claude_metadata_prefix_without_cwd_or_timestamp(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    config_dir = tmp_path / "claude"
+    session_id = "active-session"
+    transcript = config_dir / "projects" / "workspace" / f"{session_id}.jsonl"
+    transcript.parent.mkdir(parents=True, exist_ok=True)
+    transcript.write_text(
+        "\n".join(
+            [
+                json.dumps({"type": "mode", "mode": "normal", "sessionId": session_id}),
+                json.dumps(
+                    {
+                        "type": "permission-mode",
+                        "permissionMode": "default",
+                        "sessionId": session_id,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "type": "last-prompt",
+                        "lastPrompt": "submit homework",
+                        "sessionId": session_id,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "type": "user",
+                        "sessionId": session_id,
+                        "cwd": str(project_root),
+                        "timestamp": "2026-07-23T01:02:03Z",
+                    }
+                ),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", session_id)
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(config_dir))
+
+    session = find_claude_session(project_root)
+
+    assert session.path == transcript
+    assert session.session_id == session_id
+
+
 def test_requires_claude_code_session_id(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.delenv("CLAUDE_CODE_SESSION_ID", raising=False)
 

@@ -13,6 +13,12 @@ class ClaudeSessionError(Exception):
     """Raised when the active Claude Code transcript cannot be verified."""
 
 
+# These records describe Claude Code terminal state rather than a message in
+# the transcript. Newer Claude Code versions attach the active session ID but
+# intentionally omit project and timestamp metadata from them.
+_NON_CONTEXT_EVENT_TYPES = frozenset({"mode", "permission-mode", "last-prompt"})
+
+
 def _claude_config_dir() -> Path:
     configured = os.environ.get("CLAUDE_CONFIG_DIR")
     return Path(configured) if configured else Path.home() / ".claude"
@@ -55,6 +61,8 @@ def _read_metadata(path: Path, session_id: str, project_root: Path) -> SessionIn
                         f"malformed Claude transcript {path} at line {line_number}"
                     ) from exc
                 if not isinstance(event, dict) or event.get("sessionId") != session_id:
+                    continue
+                if event.get("type") in _NON_CONTEXT_EVENT_TYPES:
                     continue
                 cwd = event.get("cwd")
                 timestamp = event.get("timestamp")
