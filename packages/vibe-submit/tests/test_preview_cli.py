@@ -81,3 +81,20 @@ def test_submit_preview_saves_the_same_zip_to_outbox_on_network_error(
     assert cli._cmd_submit_preview(argparse.Namespace(preview_id="p1", force=False)) == 1
     assert captured["zip"] == zip_path
     assert captured["manifest"] is manifest
+
+
+def test_preview_claude_without_active_session_returns_clear_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from vibe_submit import cli, preview
+
+    project = tmp_path / "project"
+    project.mkdir()
+    monkeypatch.delenv("CLAUDE_CODE_SESSION_ID", raising=False)
+    monkeypatch.setattr(cli, "load_config", lambda *_args, **_kwargs: Config("https://class.example", "s1", "secret", "global"))
+    monkeypatch.setattr(preview, "get_meta", lambda *_: {})
+
+    assert cli._cmd_preview(
+        argparse.Namespace(code="HW1", project=str(project), session_source="claude")
+    ) == 1
+    assert "CLAUDE_CODE_SESSION_ID" in capsys.readouterr().err

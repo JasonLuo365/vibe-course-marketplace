@@ -14,6 +14,7 @@ from pathlib import Path
 from . import installed_version
 from .api import ApiError, get_meta, get_report, get_reports, upload
 from .collect import FileEntry, collect_project
+from .claude_sessions import ClaudeSessionError
 from .config import Config, ConfigError, ServerChangeRequired, _codex_home, load_config
 from .outbox import get_outbox, list_outbox, remove_outbox, retry_config, save_outbox
 from .package import build_package
@@ -206,8 +207,11 @@ def _cmd_preview(args: argparse.Namespace) -> int:
     except ConfigError as exc:
         print(f"Configuration error: {exc}", file=sys.stderr)
         return 1
-    except PreviewError as exc:
-        print(f"Preview error ({exc.code}): {exc.message}", file=sys.stderr)
+    except (PreviewError, ClaudeSessionError) as exc:
+        if isinstance(exc, PreviewError):
+            print(f"Preview error ({exc.code}): {exc.message}", file=sys.stderr)
+        else:
+            print(f"Preview error: {exc}", file=sys.stderr)
         return 1
     except (ApiError, ValueError) as exc:
         print(f"Preview failed: {exc}", file=sys.stderr)
