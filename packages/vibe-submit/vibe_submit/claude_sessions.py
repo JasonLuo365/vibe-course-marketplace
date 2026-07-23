@@ -40,7 +40,8 @@ def _find_transcript(config_dir: Path, session_id: str) -> Path:
     return matches[0]
 
 
-def _read_metadata(path: Path, session_id: str) -> SessionInfo:
+def _read_metadata(path: Path, session_id: str, project_root: Path) -> SessionInfo:
+    first_info: SessionInfo | None = None
     try:
         with path.open("r", encoding="utf-8", errors="replace") as transcript:
             for line_number, raw in enumerate(transcript, start=1):
@@ -67,10 +68,28 @@ def _read_metadata(path: Path, session_id: str) -> SessionInfo:
                     raise ClaudeSessionError(
                         f"Claude transcript {path} has an invalid timestamp for session {session_id}"
                     ) from exc
-                return SessionInfo(path=path, session_id=session_id, cwd=cwd, started_at=started_at)
+                try:
+                    cwd_root = Path(cwd).resolve()
+                except OSError as exc:
+                    raise ClaudeSessionError(
+                        f"unable to resolve Claude session project path: {exc}"
+                    ) from exc
+                if cwd_root != project_root:
+                    raise ClaudeSessionError(
+                        f"active Claude session {session_id} does not belong to project {project_root}"
+                    )
+                if first_info is None:
+                    first_info = SessionInfo(
+                        path=path,
+                        session_id=session_id,
+                        cwd=cwd,
+                        started_at=started_at,
+                    )
     except OSError as exc:
         raise ClaudeSessionError(f"unable to read Claude transcript {path}: {exc}") from exc
-    raise ClaudeSessionError(f"Claude transcript {path} has insufficient metadata for session {session_id}")
+    if first_info is None:
+        raise ClaudeSessionError(f"Claude transcript {path} has insufficient metadata for session {session_id}")
+    return first_info
 
 
 def find_claude_session(project_root: Path) -> SessionInfo:
@@ -81,14 +100,8 @@ def find_claude_session(project_root: Path) -> SessionInfo:
     """
     session_id = _active_session_id()
     transcript = _find_transcript(_claude_config_dir(), session_id)
-    info = _read_metadata(transcript, session_id)
     try:
-        actual_root = Path(info.cwd).resolve()
         expected_root = Path(project_root).resolve()
     except OSError as exc:
         raise ClaudeSessionError(f"unable to resolve Claude session project path: {exc}") from exc
-    if actual_root != expected_root:
-        raise ClaudeSessionError(
-            f"active Claude session {session_id} does not belong to project {expected_root}"
-        )
-    return info
+    return _read_metadata(transcript, session_id, expected_root)

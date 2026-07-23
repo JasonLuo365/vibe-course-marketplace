@@ -71,6 +71,54 @@ def test_rejects_session_from_another_project(monkeypatch: pytest.MonkeyPatch, t
         find_claude_session(project_root)
 
 
+def test_rejects_later_active_record_from_another_project(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    project_root = tmp_path / "project"
+    other_project = tmp_path / "other"
+    project_root.mkdir()
+    other_project.mkdir()
+    config_dir = tmp_path / "claude"
+    session_id = "mixed-project"
+    transcript = config_dir / "projects" / "workspace" / f"{session_id}.jsonl"
+    _write_transcript(transcript, session_id, project_root)
+    with transcript.open("a", encoding="utf-8") as handle:
+        handle.write(
+            json.dumps(
+                {
+                    "type": "assistant",
+                    "sessionId": session_id,
+                    "cwd": str(other_project),
+                    "timestamp": "2026-07-23T01:04:03Z",
+                }
+            )
+            + "\n"
+        )
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", session_id)
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(config_dir))
+
+    with pytest.raises(ClaudeSessionError, match="does not belong to project"):
+        find_claude_session(project_root)
+
+
+def test_rejects_later_active_record_with_missing_metadata(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    config_dir = tmp_path / "claude"
+    session_id = "missing-metadata"
+    transcript = config_dir / "projects" / "workspace" / f"{session_id}.jsonl"
+    _write_transcript(transcript, session_id, project_root)
+    with transcript.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps({"type": "assistant", "sessionId": session_id}) + "\n")
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", session_id)
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(config_dir))
+
+    with pytest.raises(ClaudeSessionError, match="insufficient metadata"):
+        find_claude_session(project_root)
+
+
 def test_rejects_unsupported_session_source(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="Unsupported session source"):
         find_sessions_for_source("other", tmp_path)
