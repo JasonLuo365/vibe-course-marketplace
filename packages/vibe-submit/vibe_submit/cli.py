@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import httpx
+import json
 import os
 import sys
 import tempfile
@@ -16,6 +17,7 @@ from .collect import FileEntry, collect_project
 from .config import Config, ConfigError, ServerChangeRequired, _codex_home, load_config
 from .outbox import get_outbox, list_outbox, remove_outbox, retry_config, save_outbox
 from .package import build_package
+from .preview import PreviewError, create_preview, load_preview
 from .sessions import find_sessions, session_index
 
 # Transport seam for tests that mock the server's /health endpoint.
@@ -191,6 +193,62 @@ def _cmd_submit(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_preview(args: argparse.Namespace) -> int:
+    project_root = Path(args.project).resolve()
+    try:
+        cfg = load_config(project_root, confirm=_confirm_server_change)
+        result = create_preview(
+            cfg, args.code, project_root, session_source=args.session_source
+        )
+    except ServerChangeRequired as exc:
+        print(f"Server URL change required: {exc.url}.", file=sys.stderr)
+        return 1
+    except ConfigError as exc:
+        print(f"Configuration error: {exc}", file=sys.stderr)
+        return 1
+    except PreviewError as exc:
+        print(f"Preview error ({exc.code}): {exc.message}", file=sys.stderr)
+        return 1
+    except (ApiError, ValueError) as exc:
+        print(f"Preview failed: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(result, ensure_ascii=False))
+    return 0
+
+
+def _cmd_submit_preview(args: argparse.Namespace) -> int:
+    try:
+        preview = load_preview(args.preview_id)
+    except PreviewError as exc:
+        print(f"Preview error ({exc.code}): {exc.message}", file=sys.stderr)
+        return 1
+
+    try:
+        cfg = load_config()
+    except ConfigError as exc:
+        print(f"Configuration error: {exc}", file=sys.stderr)
+        return 1
+
+    try:
+        result = upload(cfg, preview.zip_path, preview.manifest, force=args.force)
+    except ApiError as exc:
+        if exc.status == 409 and not args.force:
+            print(f"Conflict: {exc.message}. Use --force to overwrite the previous attempt.", file=sys.stderr)
+            return 3
+        if exc.status == 0 or exc.status >= 500:
+            outbox_id = save_outbox(preview.zip_path, preview.manifest, cfg)
+            print(f"Network/server error ({exc.code}); submission saved to outbox {outbox_id}.", file=sys.stderr)
+            return 1
+        print(f"Upload failed ({exc.status}/{exc.code}): {exc.message}", file=sys.stderr)
+        return 1
+
+    print(
+        f"Submitted successfully: submission_id={result.get('submission_id')} "
+        f"attempt_no={result.get('attempt_no')}"
+    )
+    return 0
+
+
 def _cmd_retry(args: argparse.Namespace) -> int:
     if args.outbox_id is None:
         entries = list_outbox()
@@ -331,6 +389,17 @@ def _build_parser() -> argparse.ArgumentParser:
         "--force", action="store_true", help="Force overwrite on conflict"
     )
     submit_parser.set_defaults(func=_cmd_submit)
+
+    preview_parser = sub.add_parser("preview", help="Create a persistent submission preview")
+    preview_parser.add_argument("--code", required=True, help="Assignment code")
+    preview_parser.add_argument("--project", default=".", help="Project root directory (default: current directory)")
+    preview_parser.add_argument("--session-source", choices=("codex", "claude"), default="codex", help="Coding-agent session source")
+    preview_parser.set_defaults(func=_cmd_preview)
+
+    submit_preview_parser = sub.add_parser("submit-preview", help="Submit a stored preview")
+    submit_preview_parser.add_argument("--preview-id", required=True, help="Persistent preview ID")
+    submit_preview_parser.add_argument("--force", action="store_true", help="Force overwrite on conflict")
+    submit_preview_parser.set_defaults(func=_cmd_submit_preview)
 
     retry_parser = sub.add_parser("retry", help="Retry or list outbox submissions")
     retry_parser.add_argument("outbox_id", nargs="?", help="Outbox entry to retry")

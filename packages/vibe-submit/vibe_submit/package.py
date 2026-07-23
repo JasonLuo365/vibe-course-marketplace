@@ -47,6 +47,7 @@ def build_package(
     assignment_code = meta["assignment_code"]
     student_no = meta["student_no"]
     client_version = meta.get("client_version", "0.1.0")
+    session_source = meta.get("session_source", "codex")
     submitted_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
     zip_path = dest / f"vibe-submit-{assignment_code}-{student_no}.zip"
@@ -109,6 +110,7 @@ def build_package(
             "assignment_code": assignment_code,
             "student_no": student_no,
             "client_version": client_version,
+            "session_source": session_source,
             "submitted_at": submitted_at,
             "files": manifest_files,
             "stats": {

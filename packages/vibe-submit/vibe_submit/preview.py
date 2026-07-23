@@ -17,7 +17,7 @@ from . import installed_version
 from .collect import collect_project
 from .config import Config, _config_dir
 from .package import build_package
-from .sessions import find_sessions, session_index
+from .sessions import find_sessions_for_source, session_index
 
 PREVIEW_LIFETIME = timedelta(hours=1)
 
@@ -110,6 +110,7 @@ def create_preview(
     cfg: Config,
     assignment_code: str,
     project_root: str | Path,
+    session_source: str = "codex",
 ) -> dict[str, Any]:
     """Build a submission preview, persist it, and return a summary dict.
 
@@ -124,7 +125,7 @@ def create_preview(
     opens_at = meta.get("opens_at")
     since = _parse_iso(opens_at) if opens_at else None
 
-    sessions = find_sessions(_codex_home(), root, since)
+    sessions = find_sessions_for_source(session_source, root, since)
     files, skipped = collect_project(root)
     code_files, screenshots, reports = _partition_files(files)
 
@@ -132,6 +133,7 @@ def create_preview(
         "assignment_code": assignment_code,
         "student_no": cfg.student_no,
         "client_version": installed_version(),
+        "session_source": "claude_code" if session_source == "claude" else "codex",
     }
 
     preview_id = secrets.token_urlsafe(12)
