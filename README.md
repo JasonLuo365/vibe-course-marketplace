@@ -28,23 +28,13 @@ Marketplace configuration should continue to use the reviewed GitHub release.
 
 ## Claude Code local-terminal setup
 
-Claude Code is supported only in a local terminal session. Install the client
-manually, then register and configure it without adding a Codex marketplace:
+Claude Code is supported only in a local terminal session. For classroom use,
+distribute a reviewed, immutable release package that installs both the
+`vibe-submit` command and the user-level `/submit-homework` Skill. Do not give
+students the mutable `ZM` branch as an installation source.
 
-```powershell
-uv tool install "git+https://github.com/JasonLuo365/vibe-course-marketplace.git@ZM#subdirectory=packages/vibe-submit"
-vibe-submit setup
-```
-
-In a Claude Code project that includes
-`plugins/claude-code/skills/submit-homework/SKILL.md`, use:
-
-```text
-/submit-homework HW01
-```
-
-The skill previews the package and warns that the active Claude Code session
-transcript is uploaded as raw content. It submits only after your explicit
-confirmation.
+See [the student Claude Code guide](docs/学生使用 Claude Code 提交作业.md) for the
+student workflow, and [the launch checklist](docs/上线前检查清单.md) before
+releasing a new client version.
 
 
