@@ -16,7 +16,16 @@ class ClaudeSessionError(Exception):
 # These records describe Claude Code terminal state rather than a message in
 # the transcript. Newer Claude Code versions attach the active session ID but
 # intentionally omit project and timestamp metadata from them.
-_NON_CONTEXT_EVENT_TYPES = frozenset({"mode", "permission-mode", "last-prompt"})
+_NON_CONTEXT_EVENT_TYPES = frozenset(
+    {
+        "mode",
+        "permission-mode",
+        "last-prompt",
+        "ai-title",
+        "agent-name",
+        "queue-operation",
+    }
+)
 
 
 def _claude_config_dir() -> Path:

@@ -64,6 +64,27 @@ def test_ignores_claude_metadata_prefix_without_cwd_or_timestamp(
                 ),
                 json.dumps(
                     {
+                        "type": "ai-title",
+                        "title": "Homework project",
+                        "sessionId": session_id,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "type": "agent-name",
+                        "agentName": "claude",
+                        "sessionId": session_id,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "type": "queue-operation",
+                        "operation": "enqueue",
+                        "sessionId": session_id,
+                    }
+                ),
+                json.dumps(
+                    {
                         "type": "user",
                         "sessionId": session_id,
                         "cwd": str(project_root),
