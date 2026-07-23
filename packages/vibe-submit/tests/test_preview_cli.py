@@ -1,5 +1,6 @@
 import argparse
 import json
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -41,6 +42,10 @@ def test_claude_preview_uses_one_source_session_and_records_manifest_source(
     assert result["preview"]["sessions"] == [preview.session_index(transcript)]
     assert captured_source == ["claude"]
     assert record.manifest["session_source"] == "claude_code"
+    with zipfile.ZipFile(record.zip_path) as archive:
+        session_entries = [name for name in archive.namelist() if name.startswith("sessions/")]
+        assert session_entries == ["sessions/claude-session.jsonl"]
+        assert archive.read(session_entries[0]) == transcript.read_bytes()
 
 
 def test_submit_preview_uploads_the_exact_persisted_zip_and_manifest(
