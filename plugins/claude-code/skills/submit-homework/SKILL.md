@@ -34,6 +34,12 @@ Show the returned preview summary, including the session, code files,
 screenshots, reports, and package size. Clearly warn that the current Claude
 Code session transcript is included in the package as raw content.
 
+Then show the exact file and session index from the same persisted preview:
+
+```sh
+vibe-submit preview-contents --preview-id <preview_id>
+```
+
 Wait for an explicit confirmation from the student. Do not upload after an
 ambiguous response, and do not interpret silence as confirmation. If the
 student cancels, explain that nothing was uploaded and the preview will expire.

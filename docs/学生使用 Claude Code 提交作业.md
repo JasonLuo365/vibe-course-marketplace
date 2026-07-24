@@ -15,7 +15,15 @@
 
 ## 第一次安装与注册
 
-1. 按课程方提供的安装说明安装客户端。安装完成后，在新开终端执行：
+1. 在 PowerShell 中运行课程提供的一键安装命令：
+
+   ```powershell
+   irm https://raw.githubusercontent.com/JasonLuo365/vibe-course-marketplace/v0.1.8/scripts/install-claude-submit.ps1 | iex
+   ```
+
+   该命令会安装客户端、用户级 `/submit-homework` Skill，并自动配置课程提交服务地址。
+
+2. 关闭并重新打开终端，然后执行：
 
    ```powershell
    vibe-submit --help
@@ -23,13 +31,13 @@
 
    能看到命令帮助即表示安装成功。
 
-2. 在终端执行一次注册：
+3. 在终端执行一次注册：
 
    ```powershell
    vibe-submit setup
    ```
 
-3. 根据终端提示输入课程邀请码、学号、姓名和密码。
+4. 根据终端提示输入课程邀请码、学号、姓名和密码。
 
 密码只在你的本机终端输入，不会发送到 Claude 对话中。注册成功后，同一台电脑通常不需要重复注册。
 

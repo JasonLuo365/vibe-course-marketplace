@@ -18,7 +18,7 @@ from .claude_sessions import ClaudeSessionError
 from .config import Config, ConfigError, ServerChangeRequired, _codex_home, load_config
 from .outbox import get_outbox, list_outbox, remove_outbox, retry_config, save_outbox
 from .package import build_package
-from .preview import PreviewError, create_preview, load_preview
+from .preview import PreviewError, create_preview, load_preview, preview_contents
 from .sessions import find_sessions, session_index
 
 # Transport seam for tests that mock the server's /health endpoint.
@@ -221,6 +221,9 @@ def _cmd_preview(args: argparse.Namespace) -> int:
 
 
 def _cmd_submit_preview(args: argparse.Namespace) -> int:
+    if not args.yes:
+        print("Confirmation required: rerun with --yes after reviewing the preview.", file=sys.stderr)
+        return 2
     try:
         preview = load_preview(args.preview_id)
     except PreviewError as exc:
@@ -250,6 +253,16 @@ def _cmd_submit_preview(args: argparse.Namespace) -> int:
         f"Submitted successfully: submission_id={result.get('submission_id')} "
         f"attempt_no={result.get('attempt_no')}"
     )
+    return 0
+
+
+def _cmd_preview_contents(args: argparse.Namespace) -> int:
+    try:
+        result = preview_contents(args.preview_id, args.path)
+    except PreviewError as exc:
+        print(f"Preview error ({exc.code}): {exc.message}", file=sys.stderr)
+        return 1
+    print(json.dumps(result, ensure_ascii=False))
     return 0
 
 
@@ -405,6 +418,13 @@ def _build_parser() -> argparse.ArgumentParser:
     submit_preview_parser.add_argument("--yes", action="store_true", help="Confirm preview submission")
     submit_preview_parser.add_argument("--force", action="store_true", help="Force overwrite on conflict")
     submit_preview_parser.set_defaults(func=_cmd_submit_preview)
+
+    preview_contents_parser = sub.add_parser(
+        "preview-contents", help="Show files and sessions in a stored preview"
+    )
+    preview_contents_parser.add_argument("--preview-id", required=True, help="Persistent preview ID")
+    preview_contents_parser.add_argument("--path", help="Optional code/, report/, or session: item")
+    preview_contents_parser.set_defaults(func=_cmd_preview_contents)
 
     retry_parser = sub.add_parser("retry", help="Retry or list outbox submissions")
     retry_parser.add_argument("outbox_id", nargs="?", help="Outbox entry to retry")

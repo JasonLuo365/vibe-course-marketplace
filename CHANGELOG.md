@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.8
+
+- Adds Claude Code current-session submission through `/submit-homework`.
+- Adds strict Claude transcript compatibility for current terminal metadata.
+- Requires `--yes` before a stored preview can be uploaded.
+- Adds a PowerShell installer that installs the Claude Skill and preconfigures the production service.
+
 ## v0.1.7
 
 - Falls back to the desktop Marketplace configuration when a stale or broken Windows `codex` command is found on `PATH`.

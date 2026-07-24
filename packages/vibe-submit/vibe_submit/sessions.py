@@ -132,7 +132,7 @@ def session_index(path: Path) -> dict:
     """
     info = read_session_info(path)
     if info is None:
-        return {}
+        return _claude_session_index(path)
 
     ended_at = info.started_at
     message_count = 0
@@ -168,6 +168,48 @@ def session_index(path: Path) -> dict:
     return {
         "session_id": info.session_id,
         "started_at": _iso_utc(info.started_at),
+        "ended_at": _iso_utc(ended_at),
+        "message_count": message_count,
+    }
+
+
+def _claude_session_index(path: Path) -> dict:
+    """Summarise a Claude Code JSONL transcript without treating state events as messages."""
+    session_id: str | None = None
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
+    message_count = 0
+
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            for raw in fh:
+                try:
+                    data = json.loads(raw)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(data, dict):
+                    continue
+                current_id = data.get("sessionId")
+                timestamp = data.get("timestamp")
+                if not isinstance(current_id, str) or not isinstance(timestamp, str):
+                    continue
+                try:
+                    event_time = _parse_iso(timestamp)
+                except (TypeError, ValueError):
+                    continue
+                session_id = session_id or current_id
+                started_at = event_time if started_at is None else min(started_at, event_time)
+                ended_at = event_time if ended_at is None else max(ended_at, event_time)
+                if data.get("type") in {"user", "assistant"}:
+                    message_count += 1
+    except OSError:
+        return {}
+
+    if session_id is None or started_at is None or ended_at is None:
+        return {}
+    return {
+        "session_id": session_id,
+        "started_at": _iso_utc(started_at),
         "ended_at": _iso_utc(ended_at),
         "message_count": message_count,
     }
